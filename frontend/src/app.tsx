@@ -8,14 +8,13 @@ function Layout({ children }: { children: ReactNode }) {
   return (
     <>
       <header>
-        <Link to="/" className="brand"><span className="brand-mark">λ</span> Python LMS</Link>
+        <Link to="/" className="brand">pycode</Link>
         <nav>
-          <a href="/#courses">Courses</a>
+          <a href="/#courses">courses</a>
+          <Link to="/projects">projects</Link>
+          <Link to={loggedIn ? "/dashboard" : "/login"}>progress</Link>
           <Link to="/practice">IDE</Link>
-          <Link to="/projects">Projects</Link>
-          <Link to="/certificates">Certificates</Link>
-          <Link to="/ai-tutor">AI tutor</Link>
-          <Link to={loggedIn ? "/dashboard" : "/login"}>{loggedIn ? "Dashboard" : "Sign in"}</Link>
+          <Link to="/ai-tutor" className="nav-cta">ASK AI</Link>
         </nav>
       </header>
       {children}
@@ -33,6 +32,10 @@ function Home() {
     ["06", "DSA & interview prep", "Solve algorithmic problems and learn the patterns behind efficient solutions.", "Challenge"],
   ];
   return <main className="landing">
+    <section className="reference-hero">
+      <div className="reference-copy"><h1>LEARN PYTHON</h1><p>FROM BASICS TO ADVANCED</p><div><Link className="reference-button primary" to="/courses">START LEARNING</Link><Link className="reference-button" to={localStorage.getItem("access_token") ? "/dashboard" : "/login"}>{localStorage.getItem("access_token") ? "PROGRESS" : "SIGN IN"}</Link></div></div>
+      <div className="reference-art"><img src="/student-learning.svg" alt="Student learning Python on a laptop" /></div>
+    </section>
     <section className="hero">
       <div className="hero-copy"><p className="eyebrow">THE MODERN PYTHON SCHOOL</p><h1>Turn curiosity into <em>working code.</em></h1><p className="lead">A focused learning space for people who want to understand Python deeply, build real things, and keep moving forward.</p><div className="hero-actions"><a className="button" href="#courses">Explore the curriculum <span>↓</span></a><Link className="button button-quiet" to="/practice">Open the IDE ↗</Link></div><div className="hero-proof"><span><strong>6+</strong> learning tracks</span><span><strong>∞</strong> practice space</span><span><strong>AI</strong> when you need a nudge</span></div></div>
       <div className="hero-art"><div className="code-window"><div className="window-top"><span></span><span></span><span></span><small>hello.py</small></div><pre><code><b>def</b> <i>make_progress</i>(day):{"\n"}    <b>if</b> day == <s>"stuck"</s>:{"\n"}        <b>return</b> <s>"ask, try, learn"</s>{"\n"}    <b>return</b> <s>"ship something"</s>{"\n"}{"\n"}print(make_progress(<s>"today"</s>))</code></pre><div className="code-output">→ ship something <span>●</span></div></div><div className="orbit-card">✦ Learn by doing</div></div>
