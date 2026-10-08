@@ -71,6 +71,7 @@ function CoursePage() {
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ["course", id], queryFn: () => api.course(id) });
   const progress = useQuery({ queryKey: ["progress", id], queryFn: () => api.progress(id), enabled: Boolean(localStorage.getItem("access_token")) });
+  const [selectedLessonId, setSelectedLessonId] = useState("");
   const enrollment = useMutation({
     mutationFn: () => api.enroll(id),
     onSuccess: () => {
@@ -85,7 +86,43 @@ function CoursePage() {
   if (query.isPending) return <main><p role="status">Loading course...</p></main>;
   if (query.isError) return <main><p role="alert">{query.error.message}</p></main>;
   const course: CourseDetail = query.data;
-  return <main><Link to="/courses">← All courses</Link><h1>{course.title}</h1><p className="lead">{course.description}</p>{progress.data?.enrolled ? <p className="progress" aria-label="Course progress">{progress.data.percentage}% complete ({progress.data.completed}/{progress.data.total} lessons)</p> : localStorage.getItem("access_token") ? <button onClick={() => enrollment.mutate()} disabled={enrollment.isPending}>{enrollment.isPending ? "Enrolling..." : "Enroll in course"}</button> : <p><Link to="/login">Sign in</Link> to enroll and track your progress.</p>}{enrollment.isError && <p role="alert">{enrollment.error.message}</p>}{course.modules.map((module) => <section className="module" key={module.id}><h2>{module.title}</h2>{module.lessons.map((lesson) => <article className="lesson card" key={lesson.id}><h3>{lesson.title}</h3><p>{lesson.content.replaceAll("#", "").trim()}</p><button onClick={() => completion.mutate(lesson.id)} disabled={completion.isPending}>{completion.isPending ? "Saving..." : "Mark complete"}</button>{lesson.quizzes.map((quiz) => <p key={quiz.id}><Link to={`/quizzes/${quiz.id}`}>Take {quiz.title}</Link></p>)}</article>)}</section>)}</main>;
+  const lessons = course.modules.flatMap((module) => module.lessons);
+  const activeLesson = lessons.find((lesson) => lesson.id === selectedLessonId) ?? lessons[0];
+  const activeIndex = lessons.findIndex((lesson) => lesson.id === activeLesson?.id);
+  const completed = progress.data?.completed ?? 0;
+  const selectLesson = (lessonId: string) => {
+    setSelectedLessonId(lessonId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  if (!activeLesson) return <main><h1>{course.title}</h1><p>No lessons are available yet.</p></main>;
+  return <div className="course-shell">
+    <aside className="course-sidebar">
+      <Link className="back-link" to="/courses">← Back to courses</Link>
+      <div className="course-sidebar-title"><div className="course-icon">Py</div><div><h2>{course.title}</h2><p>Learn at your own pace.</p></div></div>
+      <div className="sidebar-progress"><span>{progress.data?.percentage ?? 0}% Complete</span><div className="sidebar-progress-track"><div style={{ width: `${progress.data?.percentage ?? 0}%` }} /></div></div>
+      <p className="sidebar-label">COURSE CONTENT</p>
+      <ol className="lesson-list">{lessons.map((lesson, index) => <li key={lesson.id}><button className={lesson.id === activeLesson.id ? "active" : ""} onClick={() => selectLesson(lesson.id)}><span className={`lesson-status ${index < completed ? "done" : ""}`}>{index < completed ? "✓" : index + 1}</span><span>{index + 1}. {lesson.title}</span><small>{12 + index * 4} min</small></button></li>)}</ol>
+    </aside>
+    <main className="lesson-view">
+      <div className="lesson-topbar"><span className="lesson-badge">{course.title}</span><strong>{progress.data?.percentage ?? 0}% Complete</strong><div className="lesson-progress-track"><div style={{ width: `${progress.data?.percentage ?? 0}%` }} /></div></div>
+      <h1>{activeIndex + 1}. {activeLesson.title}</h1>
+      <p className="lesson-intro">{activeLesson.content.replace(/^#.*\n\n?/, "").split("\n\n")[0]}</p>
+      <div className="lesson-columns">
+        <article className="lesson-content">
+          <h2>What is {activeLesson.title}?</h2>
+          <p>{activeLesson.content.replace(/^#.*\n\n?/, "").replace(/\n\n/g, " ")}</p>
+          <div className="takeaway-callout"><strong>✧ Why this matters</strong><ul><li>Build a strong foundation through practice.</li><li>Write code that is easier to understand.</li><li>Turn concepts into working programs.</li></ul></div>
+          <h2>Example</h2><p>Here is a small example to explore:</p>
+          <pre className="lesson-code"><span>python</span><code>{`def greet(name):\n    return f"Hello, {name}!"\n\nprint(greet("Learner"))`}</code></pre>
+          <div className="lesson-output"><strong>Output</strong><code>Hello, Learner!</code></div>
+          <button className="complete-button" onClick={() => completion.mutate(activeLesson.id)} disabled={completion.isPending}>{completion.isPending ? "Saving..." : "Mark lesson complete ✓"}</button>
+          {activeLesson.quizzes.map((quiz) => <Link className="button" to={`/quizzes/${quiz.id}`} key={quiz.id}>Take {quiz.title} →</Link>)}
+        </article>
+        <aside className="lesson-aside"><div className="takeaways"><h3>✓ Key takeaways</h3><p>Practice is the fastest way to make this concept stick.</p><p>Use small examples before combining ideas.</p><p>Come back and review whenever you need.</p></div><div className="try-card"><h3>⌘ Try it yourself</h3><p>Open the practice editor and experiment with this lesson.</p><Link to="/practice">Open code editor ↗</Link></div></aside>
+      </div>
+      <div className="lesson-navigation"><button disabled={activeIndex <= 0} onClick={() => selectLesson(lessons[activeIndex - 1]?.id)}>← <span>Previous lesson</span></button><button disabled={activeIndex >= lessons.length - 1} onClick={() => selectLesson(lessons[activeIndex + 1]?.id)}><span>Next lesson</span> →</button></div>
+    </main>
+  </div>;
 }
 
 function QuizPage() {
