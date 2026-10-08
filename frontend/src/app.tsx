@@ -8,10 +8,12 @@ function Layout({ children }: { children: ReactNode }) {
   return (
     <>
       <header>
-        <Link to="/" className="brand">Python LMS</Link>
+        <Link to="/" className="brand"><span className="brand-mark">λ</span> Python LMS</Link>
         <nav>
-          <Link to="/courses">Courses</Link>
-          <Link to="/practice">Practice</Link>
+          <a href="/#courses">Courses</a>
+          <Link to="/practice">IDE</Link>
+          <Link to="/projects">Projects</Link>
+          <Link to="/certificates">Certificates</Link>
           <Link to="/ai-tutor">AI tutor</Link>
           <Link to={loggedIn ? "/dashboard" : "/login"}>{loggedIn ? "Dashboard" : "Sign in"}</Link>
         </nav>
@@ -22,7 +24,32 @@ function Layout({ children }: { children: ReactNode }) {
 }
 
 function Home() {
-  return <main><p className="eyebrow">PYTHON LMS</p><h1>Learn Python by building.</h1><p className="lead">Structured lessons, guided practice, and a tutor that helps you think.</p><Link className="button" to="/courses">Explore courses</Link></main>;
+  const tracks = [
+    ["01", "Coding basics", "Build your first programs with logic, variables, loops, and functions.", "Beginner"],
+    ["02", "Python basics", "Master the language fundamentals through small, confidence-building projects.", "Beginner"],
+    ["03", "Python intermediate", "Level up with OOP, testing, APIs, async programming, and clean architecture.", "Intermediate"],
+    ["04", "Advanced web development", "Ship production-ready services with Django, FastAPI, databases, and deployment.", "Advanced"],
+    ["05", "Python libraries", "Work with the tools professionals use: requests, pandas, pytest, and more.", "Practical"],
+    ["06", "DSA & interview prep", "Solve algorithmic problems and learn the patterns behind efficient solutions.", "Challenge"],
+  ];
+  return <main className="landing">
+    <section className="hero">
+      <div className="hero-copy"><p className="eyebrow">THE MODERN PYTHON SCHOOL</p><h1>Turn curiosity into <em>working code.</em></h1><p className="lead">A focused learning space for people who want to understand Python deeply, build real things, and keep moving forward.</p><div className="hero-actions"><a className="button" href="#courses">Explore the curriculum <span>↓</span></a><Link className="button button-quiet" to="/practice">Open the IDE ↗</Link></div><div className="hero-proof"><span><strong>6+</strong> learning tracks</span><span><strong>∞</strong> practice space</span><span><strong>AI</strong> when you need a nudge</span></div></div>
+      <div className="hero-art"><div className="code-window"><div className="window-top"><span></span><span></span><span></span><small>hello.py</small></div><pre><code><b>def</b> <i>make_progress</i>(day):{"\n"}    <b>if</b> day == <s>"stuck"</s>:{"\n"}        <b>return</b> <s>"ask, try, learn"</s>{"\n"}    <b>return</b> <s>"ship something"</s>{"\n"}{"\n"}print(make_progress(<s>"today"</s>))</code></pre><div className="code-output">→ ship something <span>●</span></div></div><div className="orbit-card">✦ Learn by doing</div></div>
+    </section>
+    <section id="courses" className="section-block"><div className="section-heading"><div><p className="eyebrow">YOUR PATH, YOUR PACE</p><h2>Find your next <em>level.</em></h2></div><Link to="/courses" className="text-link">See all courses ↗</Link></div><div className="track-grid">{tracks.map(([number, title, description, level]) => <Link to="/courses" className="track-card" key={title}><span className="track-number">{number}</span><span className="tag">{level}</span><h3>{title}</h3><p>{description}</p><span className="track-arrow">↗</span></Link>)}</div></section>
+    <section className="split-section"><div><p className="eyebrow">A BETTER WAY TO LEARN</p><h2>Small steps.<br /><em>Real momentum.</em></h2></div><div><p className="lead">Sign up to save your progress, pick up exactly where you left off, and build a learning habit that lasts.</p><Link className="button" to="/register">Start learning free →</Link><p className="fine-print">No credit card. Just a better place to practice.</p></div></section>
+    <section id="about" className="about-block"><p className="eyebrow">ABOUT PYTHON LMS</p><h2>Less scrolling. More <em>building.</em></h2><p>Python LMS is a calm, practical learning environment for aspiring developers. Follow a clear path, practice in the browser, ask for help, and collect proof of what you can do.</p><div className="about-links"><Link to="/projects">Project ideas ↗</Link><Link to="/certificates">Certificates ↗</Link><Link to="/ai-tutor">Meet your AI tutor ↗</Link></div></section>
+  </main>;
+}
+
+function ProjectsPage() {
+  const projects = ["Calculator with history", "Personal expense tracker", "Weather dashboard", "FastAPI blog API", "File organizer CLI", "Real-time chat app"];
+  return <main><p className="eyebrow">BUILD SOMETHING REAL</p><h1>Project ideas</h1><p className="lead">Practical briefs that turn lessons into portfolio pieces.</p><div className="track-grid">{projects.map((project, index) => <article className="track-card" key={project}><span className="track-number">0{index + 1}</span><h3>{project}</h3><p>Plan, build, test, and improve a Python project with a clear next milestone.</p><Link className="text-link" to="/practice">Start in the IDE ↗</Link></article>)}</div></main>;
+}
+
+function CertificatesPage() {
+  return <main className="center-page"><p className="eyebrow">SHOW WHAT YOU KNOW</p><h1>Earn your certificate.</h1><p className="lead">Complete a learning track, finish its challenges, and get a shareable certificate that reflects the work you put in.</p><div className="certificate-preview"><span className="brand-mark">λ</span><p>PYTHON LMS</p><h2>Certificate of completion</h2><p>Your name · Python Foundations</p></div><Link className="button" to="/register">Create an account to begin →</Link></main>;
 }
 
 function Courses() {
@@ -193,5 +220,5 @@ function Register() {
 }
 
 export function App() {
-  return <Layout><Routes><Route path="/" element={<Home />} /><Route path="/dashboard" element={<DashboardPage />} /><Route path="/courses" element={<Courses />} /><Route path="/courses/:id" element={<CoursePage />} /><Route path="/quizzes/:id" element={<QuizPage />} /><Route path="/practice" element={<PracticePage />} /><Route path="/ai-tutor" element={<AITutorPage />} /><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="*" element={<main><h1>Page not found</h1></main>} /></Routes></Layout>;
+  return <Layout><Routes><Route path="/" element={<Home />} /><Route path="/dashboard" element={<DashboardPage />} /><Route path="/courses" element={<Courses />} /><Route path="/courses/:id" element={<CoursePage />} /><Route path="/quizzes/:id" element={<QuizPage />} /><Route path="/practice" element={<PracticePage />} /><Route path="/projects" element={<ProjectsPage />} /><Route path="/certificates" element={<CertificatesPage />} /><Route path="/ai-tutor" element={<AITutorPage />} /><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="*" element={<main><h1>Page not found</h1></main>} /></Routes></Layout>;
 }
