@@ -24,6 +24,14 @@ export type DashboardSummary = {
   quiz_attempts: number;
   total_lessons: number;
   recommendation: string;
+  courses: Array<{
+    id: string;
+    title: string;
+    difficulty: string;
+    completed: number;
+    total: number;
+    percentage: number;
+  }>;
 };
 
 export type AdminOverview = {

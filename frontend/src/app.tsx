@@ -139,6 +139,23 @@ function DashboardPage() {
         <article className="card"><h2>Quiz attempts</h2><p>{summary.data.quiz_attempts}</p></article>
         <article className="card"><h2>Role</h2><p>{summary.data.role}</p></article>
       </div>
+      <section>
+        <h2>Course progress</h2>
+        {summary.data.courses.length === 0 && <p>You have not enrolled in a course yet. <Link to="/courses">Browse courses</Link>.</p>}
+        {summary.data.courses.map((course) => (
+          <article className="card" key={course.id}>
+            <div className="progress-row">
+              <div><h3>{course.title}</h3><span className="tag">{course.difficulty}</span></div>
+              <strong>{course.percentage}%</strong>
+            </div>
+            <div className="progress-track" role="progressbar" aria-label={`${course.title} progress`} aria-valuenow={course.percentage} aria-valuemin={0} aria-valuemax={100}>
+              <div className="progress-fill" style={{ width: `${course.percentage}%` }} />
+            </div>
+            <p>{course.completed} of {course.total} lessons completed</p>
+            <Link className="button" to={`/courses/${course.id}`}>Continue course</Link>
+          </article>
+        ))}
+      </section>
 
       {summary.data.role !== "student" && adminOverview.isPending && <p role="status">Loading admin overview...</p>}
       {adminOverview.isError && <p role="alert">{adminOverview.error.message}</p>}

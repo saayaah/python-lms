@@ -184,6 +184,39 @@ async def dashboard(
         select(func.count(QuizAttempt.id)).where(QuizAttempt.user_id == user.id)
     ) or 0
     total_lessons = await db.scalar(select(func.count(Lesson.id))) or 0
+    enrolled = (
+        await db.scalars(
+            select(Course)
+            .join(Enrollment, Enrollment.course_id == Course.id)
+            .where(Enrollment.user_id == user.id)
+            .options(selectinload(Course.modules).selectinload(Module.lessons))
+            .order_by(Course.title)
+        )
+    ).unique().all()
+    completed_ids = set(
+        (
+            await db.scalars(
+                select(LessonProgress.lesson_id).where(
+                    LessonProgress.user_id == user.id,
+                    LessonProgress.completed.is_(True),
+                )
+            )
+        ).all()
+    )
+    course_progress = []
+    for course in enrolled:
+        lessons = [lesson for module in course.modules for lesson in module.lessons]
+        completed = sum(lesson.id in completed_ids for lesson in lessons)
+        course_progress.append(
+            {
+                "id": str(course.id),
+                "title": course.title,
+                "difficulty": course.difficulty,
+                "completed": completed,
+                "total": len(lessons),
+                "percentage": round(completed / len(lessons) * 100) if lessons else 0,
+            }
+        )
     recommendation = (
         "Continue with Python fundamentals and complete your next exercise."
         if completed_lessons < 3
@@ -198,6 +231,7 @@ async def dashboard(
             "quiz_attempts": quiz_attempts,
             "total_lessons": total_lessons,
             "recommendation": recommendation,
+            "courses": course_progress,
         }
     )
 
