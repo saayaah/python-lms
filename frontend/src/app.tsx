@@ -35,6 +35,13 @@ function CoursePage() {
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: ["course", id], queryFn: () => api.course(id) });
   const progress = useQuery({ queryKey: ["progress", id], queryFn: () => api.progress(id), enabled: Boolean(localStorage.getItem("access_token")) });
+  const enrollment = useMutation({
+    mutationFn: () => api.enroll(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["progress", id] });
+    },
+  });
   const completion = useMutation({
     mutationFn: (lessonId: string) => api.completeLesson(lessonId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["progress", id] }),
@@ -42,7 +49,7 @@ function CoursePage() {
   if (query.isPending) return <main><p role="status">Loading course...</p></main>;
   if (query.isError) return <main><p role="alert">{query.error.message}</p></main>;
   const course: CourseDetail = query.data;
-  return <main><Link to="/courses">← All courses</Link><h1>{course.title}</h1><p className="lead">{course.description}</p>{progress.data && <p className="progress" aria-label="Course progress">{progress.data.percentage}% complete ({progress.data.completed}/{progress.data.total} lessons)</p>}{!localStorage.getItem("access_token") && <p><Link to="/login">Sign in</Link> to track your progress.</p>}{course.modules.map((module) => <section className="module" key={module.id}><h2>{module.title}</h2>{module.lessons.map((lesson) => <article className="lesson card" key={lesson.id}><h3>{lesson.title}</h3><p>{lesson.content.replaceAll("#", "").trim()}</p><button onClick={() => completion.mutate(lesson.id)} disabled={completion.isPending}>{completion.isPending ? "Saving..." : "Mark complete"}</button>{lesson.quizzes.map((quiz) => <p key={quiz.id}><Link to={`/quizzes/${quiz.id}`}>Take {quiz.title}</Link></p>)}</article>)}</section>)}</main>;
+  return <main><Link to="/courses">← All courses</Link><h1>{course.title}</h1><p className="lead">{course.description}</p>{progress.data?.enrolled ? <p className="progress" aria-label="Course progress">{progress.data.percentage}% complete ({progress.data.completed}/{progress.data.total} lessons)</p> : localStorage.getItem("access_token") ? <button onClick={() => enrollment.mutate()} disabled={enrollment.isPending}>{enrollment.isPending ? "Enrolling..." : "Enroll in course"}</button> : <p><Link to="/login">Sign in</Link> to enroll and track your progress.</p>}{enrollment.isError && <p role="alert">{enrollment.error.message}</p>}{course.modules.map((module) => <section className="module" key={module.id}><h2>{module.title}</h2>{module.lessons.map((lesson) => <article className="lesson card" key={lesson.id}><h3>{lesson.title}</h3><p>{lesson.content.replaceAll("#", "").trim()}</p><button onClick={() => completion.mutate(lesson.id)} disabled={completion.isPending}>{completion.isPending ? "Saving..." : "Mark complete"}</button>{lesson.quizzes.map((quiz) => <p key={quiz.id}><Link to={`/quizzes/${quiz.id}`}>Take {quiz.title}</Link></p>)}</article>)}</section>)}</main>;
 }
 
 function QuizPage() {

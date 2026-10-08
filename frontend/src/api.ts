@@ -74,13 +74,15 @@ export const api = {
     }),
   dashboard: () => request<DashboardSummary>("/dashboard"),
   adminOverview: () => request<AdminOverview>("/admin/overview"),
+  enroll: (courseId: string) =>
+    request<null>(`/courses/${courseId}/enroll`, { method: "POST" }),
   completeLesson: (lessonId: string, completed = true) =>
     request<{ lesson_id: string; completed: boolean }>(`/lessons/${lessonId}/complete`, {
       method: "POST",
       body: JSON.stringify({ completed }),
     }),
   progress: (courseId: string) =>
-    request<{ completed: number; total: number; percentage: number }>(`/progress/${courseId}`),
+    request<{ completed: number; total: number; percentage: number; enrolled: boolean }>(`/progress/${courseId}`),
   quiz: (quizId: string) => request<{ id: string; title: string; questions: Array<{ id: string; prompt: string; options: string[] }> }>(`/quizzes/${quizId}`),
   submitQuiz: (quizId: string, answers: Record<string, string>) =>
     request<{ score: number; total: number; percentage: number }>(`/quizzes/${quizId}/attempts`, {

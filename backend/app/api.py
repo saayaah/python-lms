@@ -136,6 +136,12 @@ async def progress(
     db: AsyncSession = Depends(get_db),
 ) -> Envelope:
     user = await auth_user(authorization, db)
+    enrolled = await db.scalar(
+        select(Enrollment.id).where(
+            Enrollment.user_id == user.id,
+            Enrollment.course_id == course_id,
+        )
+    ) is not None
     total = (
         await db.scalar(
             select(func.count(Lesson.id)).join(Module).where(Module.course_id == course_id)
@@ -161,6 +167,7 @@ async def progress(
             "completed": done,
             "total": total,
             "percentage": round(done / total * 100) if total else 0,
+            "enrolled": enrolled,
         }
     )
 
