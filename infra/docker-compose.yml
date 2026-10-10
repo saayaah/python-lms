@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lms
+      POSTGRES_PASSWORD: lms
+      POSTGRES_DB: lms
+    ports: ["5432:5432"]
+    volumes: [lms-db:/var/lib/postgresql/data]
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  api:
+    build: ../backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://lms:lms@db:5432/lms
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: change-me
+    depends_on: [db, redis]
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    volumes: ["../frontend:/app"]
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports: ["5173:5173"]
+volumes:
+  lms-db:
