@@ -5,6 +5,14 @@ import { api, CourseDetail } from "./api";
 
 function Layout({ children }: { children: ReactNode }) {
   const loggedIn = Boolean(localStorage.getItem("access_token"));
+  const navigate = useNavigate();
+  async function logout() {
+    try {
+      await api.logout();
+    } finally {
+      navigate("/login");
+    }
+  }
   return (
     <>
       <header>
@@ -15,6 +23,7 @@ function Layout({ children }: { children: ReactNode }) {
           <Link to={loggedIn ? "/dashboard" : "/login"}>progress</Link>
           <Link to="/practice">IDE</Link>
           <Link to="/ai-tutor" className="nav-cta">ASK AI</Link>
+          {loggedIn && <button type="button" onClick={logout}>SIGN OUT</button>}
         </nav>
       </header>
       {children}
