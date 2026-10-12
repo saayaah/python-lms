@@ -9,7 +9,7 @@ from app.db import Base
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("+psycopg", ""))
-if config.config_file_name:
+if config.config_file_name and config.get_section("loggers"):
     fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 

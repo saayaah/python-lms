@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -37,6 +37,19 @@ async def auth_user(authorization: str | None, db: AsyncSession) -> User:
     if not authorization:
         raise HTTPException(status_code=401, detail="Authentication required")
     return await user_from_token(authorization, db)
+
+
+async def require_enrollment(
+    user_id: UUID, course_id: UUID, db: AsyncSession
+) -> None:
+    enrolled = await db.scalar(
+        select(Enrollment.id).where(
+            Enrollment.user_id == user_id,
+            Enrollment.course_id == course_id,
+        )
+    )
+    if enrolled is None:
+        raise HTTPException(status_code=403, detail="Enroll in this course first")
 
 
 @router.get("/health", response_model=Envelope)
@@ -114,8 +127,12 @@ async def complete_lesson(
     db: AsyncSession = Depends(get_db),
 ) -> Envelope:
     user = await auth_user(authorization, db)
-    if await db.scalar(select(Lesson.id).where(Lesson.id == lesson_id)) is None:
+    lesson_course_id = await db.scalar(
+        select(Module.course_id).join(Lesson, Lesson.module_id == Module.id).where(Lesson.id == lesson_id)
+    )
+    if lesson_course_id is None:
         raise HTTPException(status_code=404, detail="Lesson not found")
+    await require_enrollment(user.id, lesson_course_id, db)
     progress = await db.scalar(
         select(LessonProgress).where(
             LessonProgress.user_id == user.id, LessonProgress.lesson_id == lesson_id
@@ -305,6 +322,14 @@ async def quiz_attempt(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="Quiz not found")
+    lesson_course_id = await db.scalar(
+        select(Module.course_id)
+        .join(Lesson, Lesson.module_id == Module.id)
+        .where(Lesson.id == row.lesson_id)
+    )
+    if lesson_course_id is None:
+        raise HTTPException(status_code=404, detail="Quiz lesson not found")
+    await require_enrollment(user.id, lesson_course_id, db)
     score = sum(
         payload.answers.get(question.id) == question.answer for question in row.questions
     )

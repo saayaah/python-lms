@@ -30,14 +30,12 @@ def create_access_token(subject: str) -> str:
     )
 
 
-def create_refresh_token(subject: str) -> tuple[str, str]:
+def create_refresh_token(subject: str) -> tuple[str, datetime]:
     settings = get_settings()
     raw = secrets.token_urlsafe(48)
     expires = datetime.now(UTC) + timedelta(days=settings.refresh_token_days)
     # The opaque token is stored only as a hash; its expiry is enforced by the API token record lifecycle.
-    return raw, jwt.encode(
-        {"sub": subject, "type": "refresh", "exp": expires}, settings.secret_key, algorithm="HS256"
-    )
+    return raw, expires
 
 
 def decode_access_token(value: str) -> dict:

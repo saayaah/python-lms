@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,8 +50,8 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> E
     )
     db.add(user)
     await db.flush()
-    raw, _ = create_refresh_token(str(user.id))
-    db.add(RefreshToken(token_hash=token_hash(raw), user_id=user.id))
+    raw, expires_at = create_refresh_token(str(user.id))
+    db.add(RefreshToken(token_hash=token_hash(raw), user_id=user.id, expires_at=expires_at))
     await db.commit()
     return Envelope(data=token_response(user, raw))
 
@@ -59,8 +61,8 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> En
     user = await db.scalar(select(User).where(User.email == payload.email.lower()))
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    raw, _ = create_refresh_token(str(user.id))
-    db.add(RefreshToken(token_hash=token_hash(raw), user_id=user.id))
+    raw, expires_at = create_refresh_token(str(user.id))
+    db.add(RefreshToken(token_hash=token_hash(raw), user_id=user.id, expires_at=expires_at))
     await db.commit()
     return Envelope(data=token_response(user, raw))
 
@@ -73,13 +75,14 @@ async def refresh(payload: RefreshRequest, db: AsyncSession = Depends(get_db)) -
         .where(
             RefreshToken.token_hash == token_hash(payload.refresh_token),
             RefreshToken.revoked.is_(False),
+            RefreshToken.expires_at > datetime.now(UTC),
         )
     )
-    if record is None:
+    if record is None or not record.user.is_active:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     record.revoked = True
-    raw, _ = create_refresh_token(str(record.user_id))
-    db.add(RefreshToken(token_hash=token_hash(raw), user_id=record.user_id))
+    raw, expires_at = create_refresh_token(str(record.user_id))
+    db.add(RefreshToken(token_hash=token_hash(raw), user_id=record.user_id, expires_at=expires_at))
     await db.commit()
     return Envelope(data=token_response(record.user, raw))
 
