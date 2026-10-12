@@ -1,5 +1,5 @@
 import { FormEvent, useState, type ReactNode } from "react";
-import { Link, Route, Routes, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, CourseDetail } from "./api";
 
@@ -29,6 +29,15 @@ function Layout({ children }: { children: ReactNode }) {
       {children}
     </>
   );
+}
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const loggedIn = Boolean(localStorage.getItem("access_token"));
+  if (!loggedIn) {
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+  return <>{children}</>;
 }
 
 function Home() {
@@ -264,8 +273,9 @@ function DashboardPage() {
 
 function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState("");
-  async function submit(event: FormEvent) { event.preventDefault(); setError(""); try { const session = await api.login(email, password); localStorage.setItem("access_token", session.access_token); localStorage.setItem("refresh_token", session.refresh_token); navigate("/courses"); } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to sign in"); } }
+  async function submit(event: FormEvent) { event.preventDefault(); setError(""); try { const session = await api.login(email, password); localStorage.setItem("access_token", session.access_token); localStorage.setItem("refresh_token", session.refresh_token); navigate(searchParams.get("next") || "/courses"); } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to sign in"); } }
   return <main><h1>Welcome back</h1><form className="form" onSubmit={submit}><label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required /></label>{error && <p role="alert">{error}</p>}<button type="submit">Sign in</button></form><p>New here? <Link to="/register">Create an account</Link>.</p></main>;
 }
 
@@ -277,5 +287,5 @@ function Register() {
 }
 
 export function App() {
-  return <Layout><Routes><Route path="/" element={<Home />} /><Route path="/dashboard" element={<DashboardPage />} /><Route path="/courses" element={<Courses />} /><Route path="/courses/track/:slug" element={<LibraryCoursePage />} /><Route path="/courses/:id" element={<CoursePage />} /><Route path="/quizzes/:id" element={<QuizPage />} /><Route path="/practice" element={<PracticePage />} /><Route path="/projects" element={<ProjectsPage />} /><Route path="/certificates" element={<CertificatesPage />} /><Route path="/ai-tutor" element={<AITutorPage />} /><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="*" element={<main><h1>Page not found</h1></main>} /></Routes></Layout>;
+  return <Layout><Routes><Route path="/" element={<Home />} /><Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} /><Route path="/courses" element={<Courses />} /><Route path="/courses/track/:slug" element={<LibraryCoursePage />} /><Route path="/courses/:id" element={<CoursePage />} /><Route path="/quizzes/:id" element={<ProtectedRoute><QuizPage /></ProtectedRoute>} /><Route path="/practice" element={<ProtectedRoute><PracticePage /></ProtectedRoute>} /><Route path="/projects" element={<ProjectsPage />} /><Route path="/certificates" element={<CertificatesPage />} /><Route path="/ai-tutor" element={<ProtectedRoute><AITutorPage /></ProtectedRoute>} /><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /><Route path="*" element={<main><h1>Page not found</h1></main>} /></Routes></Layout>;
 }
