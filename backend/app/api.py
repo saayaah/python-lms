@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from sqlalchemy import Integer, func, select
+from sqlalchemy import Integer, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -207,6 +207,18 @@ async def dashboard(
     quiz_attempts = await db.scalar(
         select(func.count(QuizAttempt.id)).where(QuizAttempt.user_id == user.id)
     ) or 0
+    recent_attempts = (
+        await db.execute(
+            select(QuizAttempt, Quiz.title, Course.title)
+            .join(Quiz, Quiz.id == QuizAttempt.quiz_id)
+            .join(Lesson, Lesson.id == Quiz.lesson_id)
+            .join(Module, Module.id == Lesson.module_id)
+            .join(Course, Course.id == Module.course_id)
+            .where(QuizAttempt.user_id == user.id)
+            .order_by(desc(QuizAttempt.created_at))
+            .limit(5)
+        )
+    ).all()
     total_lessons = await db.scalar(select(func.count(Lesson.id))) or 0
     enrolled = (
         await db.scalars(
@@ -253,6 +265,19 @@ async def dashboard(
             "enrolled_courses": enrolled_courses,
             "completed_lessons": completed_lessons,
             "quiz_attempts": quiz_attempts,
+            "recent_quiz_attempts": [
+                {
+                    "quiz_title": quiz_title,
+                    "course_title": course_title,
+                    "score": attempt.score,
+                    "total": attempt.total,
+                    "percentage": round(attempt.score / attempt.total * 100)
+                    if attempt.total
+                    else 0,
+                    "completed_at": attempt.created_at.isoformat(),
+                }
+                for attempt, quiz_title, course_title in recent_attempts
+            ],
             "total_lessons": total_lessons,
             "recommendation": recommendation,
             "courses": course_progress,

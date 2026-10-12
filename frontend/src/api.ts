@@ -22,6 +22,14 @@ export type DashboardSummary = {
   enrolled_courses: number;
   completed_lessons: number;
   quiz_attempts: number;
+  recent_quiz_attempts: Array<{
+    quiz_title: string;
+    course_title: string;
+    score: number;
+    total: number;
+    percentage: number;
+    completed_at: string;
+  }>;
   total_lessons: number;
   recommendation: string;
   courses: Array<{

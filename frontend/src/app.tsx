@@ -256,6 +256,19 @@ function DashboardPage() {
           </article>
         ))}
       </section>
+      <section>
+        <h2>Recent quiz results</h2>
+        {summary.data.recent_quiz_attempts.length === 0 && <p>No quiz attempts yet. Complete a lesson and try its quiz.</p>}
+        {summary.data.recent_quiz_attempts.map((attempt) => (
+          <article className="card" key={`${attempt.quiz_title}-${attempt.completed_at}`}>
+            <div className="progress-row">
+              <div><h3>{attempt.quiz_title}</h3><span className="tag">{attempt.course_title}</span></div>
+              <strong>{attempt.percentage}%</strong>
+            </div>
+            <p>{attempt.score} of {attempt.total} answers correct</p>
+          </article>
+        ))}
+      </section>
 
       {summary.data.role !== "student" && adminOverview.isPending && <p role="status">Loading admin overview...</p>}
       {adminOverview.isError && <p role="alert">{adminOverview.error.message}</p>}
