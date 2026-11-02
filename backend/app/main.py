@@ -5,13 +5,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import router as api_router
 from app.auth import router as auth_router
+from app.config import get_settings
 from app.db import Base, engine
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
+    if get_settings().app_env == "development":
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
