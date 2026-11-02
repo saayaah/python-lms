@@ -355,6 +355,10 @@ async def quiz_attempt(
     if lesson_course_id is None:
         raise HTTPException(status_code=404, detail="Quiz lesson not found")
     await require_enrollment(user.id, lesson_course_id, db)
+    expected_question_ids = {question.id for question in row.questions}
+    submitted_question_ids = set(payload.answers)
+    if submitted_question_ids != expected_question_ids:
+        raise HTTPException(status_code=422, detail="Answers must include every quiz question exactly once")
     score = sum(
         payload.answers.get(question.id) == question.answer for question in row.questions
     )

@@ -83,6 +83,17 @@ async function refreshAccessToken(): Promise<boolean> {
   return true;
 }
 
+let refreshInFlight: Promise<boolean> | null = null;
+
+function refreshAccessTokenOnce(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = refreshAccessToken().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 async function request<T>(
   path: string,
   init?: RequestInit,
@@ -97,12 +108,19 @@ async function request<T>(
       ...init?.headers,
     },
   });
-  const body = (await response.json()) as Envelope<T> | { detail?: string };
+  const contentType = response.headers.get("content-type") ?? "";
+  const body = contentType.includes("application/json")
+    ? ((await response.json()) as Envelope<T> | { detail?: string; errors?: string[] })
+    : { detail: await response.text() };
   if (response.status === 401 && retryOnUnauthorized && !path.startsWith("/auth/")) {
-    if (await refreshAccessToken()) return request<T>(path, init, false);
+    if (await refreshAccessTokenOnce()) return request<T>(path, init, false);
     clearSession();
   }
-  if (!response.ok) throw new Error("detail" in body ? body.detail ?? "Request failed" : "Request failed");
+  if (!response.ok) {
+    const detail = "detail" in body ? body.detail : undefined;
+    const errors = "errors" in body && Array.isArray(body.errors) ? body.errors.join(", ") : undefined;
+    throw new Error(detail || errors || "Request failed");
+  }
   return (body as Envelope<T>).data;
 }
 
