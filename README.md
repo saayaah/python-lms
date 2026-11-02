@@ -19,6 +19,13 @@ databases, the container runs `alembic upgrade head` before starting the API;
 run the same command manually from `backend` when applying migrations outside
 Docker.
 
+The AI assistant defaults to the explicit development provider `AI_PROVIDER=mock`.
+To use a real OpenAI-compatible provider, set `AI_PROVIDER=openai_compatible`,
+`AI_API_KEY`, and optionally `AI_MODEL`, `AI_BASE_URL`, and `AI_TIMEOUT_SECONDS`
+in the backend environment. Keys stay on the backend and are never sent to the
+browser. If a real provider is selected without credentials, the API returns a
+clear `503` setup error rather than a fabricated answer.
+
 The execution service is intentionally isolated behind an interface. Production deployments must connect it to a hardened, network-disabled worker/container rather than executing arbitrary code in the API process.
 
 ## Project layout
