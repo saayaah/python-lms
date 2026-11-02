@@ -51,9 +51,16 @@ class CodeRunRequest(BaseModel):
     code: str = Field(max_length=20_000)
 
 
+class ChatMessage(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=4_000)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4_000)
     mode: str = "socratic"
+    context: str | None = Field(default=None, max_length=6_000)
+    history: list[ChatMessage] = Field(default_factory=list, max_length=12)
 
 
 class QuizAnswerRequest(BaseModel):

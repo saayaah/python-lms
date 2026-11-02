@@ -2,6 +2,7 @@ import { FormEvent, useState, type ReactNode } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, CourseDetail } from "./api";
+import { AIChat } from "./components/AIChat";
 
 function Layout({ children }: { children: ReactNode }) {
   const loggedIn = Boolean(localStorage.getItem("access_token"));
@@ -138,7 +139,7 @@ function CoursePage() {
           <button className="complete-button" onClick={() => completion.mutate(activeLesson.id)} disabled={completion.isPending}>{completion.isPending ? "Saving..." : "Mark lesson complete ✓"}</button>
           {activeLesson.quizzes.map((quiz) => <Link className="button" to={`/quizzes/${quiz.id}`} key={quiz.id}>Take {quiz.title} →</Link>)}
         </article>
-        <aside className="lesson-aside"><div className="takeaways"><h3>✓ Key takeaways</h3><p>Practice is the fastest way to make this concept stick.</p><p>Use small examples before combining ideas.</p><p>Come back and review whenever you need.</p></div><div className="try-card"><h3>⌘ Try it yourself</h3><p>Open the practice editor and experiment with this lesson.</p><Link to="/practice">Open code editor ↗</Link></div></aside>
+        <aside className="lesson-aside"><div className="takeaways"><h3>✓ Key takeaways</h3><p>Practice is the fastest way to make this concept stick.</p><p>Use small examples before combining ideas.</p><p>Come back and review whenever you need.</p></div><div className="try-card"><h3>⌘ Try it yourself</h3><p>Open the practice editor and experiment with this lesson.</p><Link to="/practice">Open code editor ↗</Link></div><AIChat title="Ask about this lesson" context={`${activeLesson.title}\n\n${activeLesson.content}`} /></aside>
       </div>
       <div className="lesson-navigation"><button disabled={activeIndex <= 0} onClick={() => selectLesson(lessons[activeIndex - 1]?.id)}>← <span>Previous lesson</span></button><button disabled={activeIndex >= lessons.length - 1} onClick={() => selectLesson(lessons[activeIndex + 1]?.id)}><span>Next lesson</span> →</button></div>
     </main>
@@ -163,49 +164,15 @@ function PracticePage() {
   const problem = query.data?.find((item) => item.id === selected) ?? query.data?.[0];
   const [code, setCode] = useState("");
   const activeCode = code || problem?.starter_code || "";
-  return <main><h1>Practice lab</h1><p className="lead">Run small Python programs and inspect the output.</p>{query.isPending && <p role="status">Loading exercises...</p>}{query.isError && <p role="alert">{query.error.message}</p>}{query.data && <><label className="select-label">Exercise<select value={problem?.id ?? ""} onChange={(event) => { setSelected(event.target.value); setCode(""); }}><option value="" disabled>Select an exercise</option>{query.data.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}</select></label>{problem && <><p>{problem.statement}</p><textarea className="editor" aria-label="Python code" value={activeCode} onChange={(event) => setCode(event.target.value)} spellCheck={false} /><button onClick={() => run.mutate({ id: problem.id, code: activeCode })} disabled={run.isPending}>{run.isPending ? "Running..." : "Run code"}</button>{run.data && <pre className={`output ${run.data.status}`}>{run.data.stdout || run.data.stderr || "No output"}{"\n"}Completed in {run.data.execution_time_ms}ms</pre>}</>}</>}</main>;
+  return <main><h1>Practice lab</h1><p className="lead">Run small Python programs and inspect the output.</p>{query.isPending && <p role="status">Loading exercises...</p>}{query.isError && <p role="alert">{query.error.message}</p>}{query.data && <><label className="select-label">Exercise<select value={problem?.id ?? ""} onChange={(event) => { setSelected(event.target.value); setCode(""); }}><option value="" disabled>Select an exercise</option>{query.data.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}</select></label>{problem && <><p>{problem.statement}</p><textarea className="editor" aria-label="Python code" value={activeCode} onChange={(event) => setCode(event.target.value)} spellCheck={false} /><button onClick={() => run.mutate({ id: problem.id, code: activeCode })} disabled={run.isPending}>{run.isPending ? "Running..." : "Run code"}</button>{run.data && <pre className={`output ${run.data.status}`}>{run.data.stdout || run.data.stderr || "No output"}{"\n"}Completed in {run.data.execution_time_ms}ms</pre>}<AIChat title="Ask about this exercise" context={`${problem.title}\n\n${problem.statement}\n\nCode:\n${activeCode}`} /></>}</>}</main>;
 }
 
 function AITutorPage() {
-  const [question, setQuestion] = useState("Explain the difference between a list and a tuple in Python.");
-  const [reply, setReply] = useState("");
-  const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
-
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    setReply("");
-    setPending(true);
-
-    try {
-      const result = await api.chat(question, "socratic");
-      setReply(result.reply);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to reach the tutor");
-    } finally {
-      setPending(false);
-    }
-  }
-
   return (
     <main>
       <h1>AI tutor</h1>
       <p className="lead">Ask for coaching, examples, or a guided explanation for the next concept you are learning.</p>
-      <form className="form" onSubmit={handleSubmit}>
-        <label>
-          Question
-          <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={6} required />
-        </label>
-        <button type="submit" disabled={pending}>{pending ? "Thinking..." : "Ask tutor"}</button>
-      </form>
-      {error && <p role="alert">{error}</p>}
-      {reply && (
-        <article className="card">
-          <h2>Coach response</h2>
-          <p>{reply}</p>
-        </article>
-      )}
+      <AIChat />
     </main>
   );
 }

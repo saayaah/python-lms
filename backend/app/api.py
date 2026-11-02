@@ -28,7 +28,7 @@ from app.schemas import (
     QuizAnswerRequest,
 )
 from app.services.execution import ExecutionService
-from app.services.providers import MockAIProvider
+from app.services.providers import AIProviderError, get_ai_provider
 
 router = APIRouter()
 
@@ -375,12 +375,16 @@ async def chat(
     db: AsyncSession = Depends(get_db),
 ) -> Envelope:
     await auth_user(authorization, db)
-    return Envelope(
-        data={
-            "reply": await MockAIProvider().reply(payload.message, payload.mode),
-            "disclaimer": "AI output should be verified.",
-        }
-    )
+    try:
+        reply = await get_ai_provider().reply(
+            payload.message,
+            payload.mode,
+            history=[message.model_dump() for message in payload.history],
+            context=payload.context,
+        )
+    except AIProviderError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return Envelope(data={"reply": reply, "disclaimer": "AI output should be verified."})
 
 
 @router.get("/problems", response_model=Envelope)

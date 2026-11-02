@@ -48,6 +48,7 @@ export type AdminOverview = {
   student_count: number;
   completion_rate: number;
 };
+export type AIMessage = { role: "user" | "assistant"; content: string };
 
 type Envelope<T> = { success: boolean; data: T; message?: string; errors: string[] };
 const baseUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
@@ -160,10 +161,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ code }),
     }),
-  chat: (message: string, mode = "socratic") =>
+  chat: (message: string, mode = "socratic", history: AIMessage[] = [], context?: string) =>
     request<{ reply: string; disclaimer: string }>("/ai/chat", {
       method: "POST",
-      body: JSON.stringify({ message, mode }),
+      body: JSON.stringify({ message, mode, history, context }),
     }),
   logout: async () => {
     const refreshToken = localStorage.getItem("refresh_token");
