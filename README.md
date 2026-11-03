@@ -1,6 +1,6 @@
 # Python LMS
 
-An extensible learning platform for Python and data structures. The first vertical slice provides JWT authentication, course/lesson progress, coding exercises, provider interfaces for AI and voice features, and a React client shell.
+An extensible learning platform for Python and data structures.
 
 ## Quick start
 
